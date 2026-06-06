@@ -78,7 +78,7 @@
                 -- Change the owner of the public schema to your user (Highly Recommended)
                 # ALTER SCHEMA public OWNER TO testuser1;
 
-                -- 6. Explicitly grant all permissions on the public schema just to be safe
+                -- Explicitly grant all permissions on the public schema just to be safe
                 # GRANT ALL ON SCHEMA public TO testuser1;
             ```
 
