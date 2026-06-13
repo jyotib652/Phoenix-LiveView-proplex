@@ -67,6 +67,21 @@ config :proplex, ProplexWeb.Endpoint,
     ]
   ]
 
+# # Removing the ending E for regular expression. Modern regex doesn't need an ending E
+# config :proplex, ProplexWeb.Endpoint,
+#   live_reload: [
+#     web_console_logger: true,
+#     patterns: [
+#       # Static assets, except user uploads
+#       ~r"priv/static/(?!uploads/).*\.(js|css|png|jpeg|jpg|gif|svg)$",
+#       # Gettext translations
+#       ~r"priv/gettext/.*\.po$",
+#       # Router, Controllers, LiveViews and LiveComponents
+#       ~r"lib/proplex_web/router\.ex$",
+#       ~r"lib/proplex_web/(controllers|live|components)/.*\.(ex|heex)$"
+#     ]
+#   ]
+
 # Enable dev routes for dashboard and mailbox
 config :proplex, dev_routes: true
 

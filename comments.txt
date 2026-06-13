@@ -1,0 +1,46 @@
+1. Html pages for view:
+proplex_web/controllers/page_html/home.html.heex -> view for home or "/" route:
+<Layouts.app flash={@flash}>  -> Layouts.app is basically a function component that wraps our page with common UI elements like headers, navbars, footers etc. 
+Then we can provide a prop which is flash and that is going to be in {@flash} like that.
+@flash basically holds any flash messages that are going to be used to display any temporary messages to the user. In react this is called toast messages.
+
+In Phoenix we use Tailwind by default so we can use tailWind classes:
+<div class="mx-auto max-w-3xl px-4 py-16>
+    <h1 class="text-3xl font-semibold">
+
+mx-auto -> margin x auto
+max-w-3xl -> maximum screen width 3xl
+px-4  -> padding to the x is 4
+py-16 -> padding to the y is 16
+text-3xl -> text size 3xl
+font-semibold -> font is going to be semibold
+mt-4 -> margin top 4
+text-base-content/70 -> Set the text color to the theme's primary content/foreground color, but make it 70% opaque.
+    -> text- (The Property) This tells Tailwind you want to change the text color.
+    -> base-content (The Theme Color) is the color meant to sit on top of those backgrounds so that it's easily 
+    readable (usually near-black in light mode or near-white in dark mode).
+    -> /70 (The Opacity Modifier) The forward slash followed by a number is Tailwind's shorthand for alpha opacity.
+    /70 means 70% opacity (or an alpha value of 0.7)
+
+
+Since we used <Layouts.app> tag Phoenix Branding, Layout, Signin, Navigation & Theme all of these are rendered on our Home page without writing html, css or javascript codes
+for these. So all of these are rendered on our home.html.heex page automatically because of <Layouts.app> tag.
+
+And these common UI elements like headers, footers, navbars etc. are located in:
+proplex/lib/proplex_web/components/layouts/layouts/layouts.ex
+
+Now we're going to remove or disable header tag from layouts.ex which will remove themes, phoenix branding, website, github etc.
+Here we're disabling the header but the code for header still remains on the layout.ex page.
+
+layouts.ex:
+{render_slot(@inner_block)} - This render slot basically renders whatever content you nest inside the component tags in this Layout.app. So
+whatever you wrote in your home.html.heex <Layouts.app> tag is being rendered on the Home page by this {render_slot(@inner_block)} tag.
+
+{render_slot(@inner_block)} - @inner_block captures any child content that is passed between the openning and closing tags of our component.
+So in our case in the home.html.heex file that is going to be this div, h1 and paragraph(p) tag. That is what going to be captured
+in this @inner_block within this render slot like that.
+
+ <.flash_group flash={@flash} />  -> This leading "." means we're calling local function component called flash_group which is defined
+ below in the same file. So in this line we're calling flash_group component which is used to display flash messages in web page.
+ We used "flash={@flah}" in our <Layouts.app> tag in home.html.heex page. So this flash_group renders those flash tags in the web page.
+

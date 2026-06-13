@@ -42,6 +42,8 @@ B) If we encounter an error while implementing migration using command: mix ecto
 we can rollback the migration using the command:
 $ mix ecto.rollback
 
+4. Router.ex file location: lib/proplex-web/router.ex
+
 
 
 
