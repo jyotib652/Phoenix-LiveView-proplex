@@ -42,6 +42,10 @@ B) If we encounter an error while implementing migration using command: mix ecto
 we can rollback the migration using the command:
 $ mix ecto.rollback
 
+C) `$ mix phx.gen.auth Accounts User users` command will create an accounts folder under lib/proplex
+directory containing files for users' schema and users' authentications, notifications.
+The schema file is: user.ex
+
 4. Router.ex file location: lib/proplex-web/router.ex
 
 

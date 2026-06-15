@@ -44,3 +44,34 @@ in this @inner_block within this render slot like that.
  below in the same file. So in this line we're calling flash_group component which is used to display flash messages in web page.
  We used "flash={@flah}" in our <Layouts.app> tag in home.html.heex page. So this flash_group renders those flash tags in the web page.
 
+
+ 2. user schema in lib/proplex/accounts/user.ex:
+ defmodule Proplex.Accounts.User do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  schema "users" do
+    field :email, :string
+    field :username, :string
+    field :password, :string, virtual: true, redact: true
+    field :hashed_password, :string, redact: true
+    field :confirmed_at, :utc_datetime
+    field :authenticated_at, :utc_datetime, virtual: true
+
+    timestamps(type: :utc_datetime)
+  end
+
+  So user schema will use "users" table in database.
+
+  "field :password, :string, virtual: true, redact: true" -> 
+  virtual true means passwords fields only exist on this struct only and in memory, never
+  as a database column. Then when we say redact true for both the password fields, we basically don't want to leak the passwords. So we're going
+  to strip the password fields from inspection , output, any error logs and the phoenix debug pages.
+
+
+  Change set - a change set is a group of changes that we want to make to a struct before it's committed to the database.
+  So change set basically allow us to do specific actions such as filtering, typecasting and validation and also setting
+  some constraints when we're manipulating our structs. So we're going to write few change sets on our own. And the first
+  change set that we're going to write is `registration_changeset(user, attrs)`
+
+
