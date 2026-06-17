@@ -155,10 +155,12 @@ defmodule Proplex.Accounts do
     end)
   end
 
+  # for changing the user's username
   def change_user_username(user, attrs \\ %{}, opts \\ []) do
     User.username_changeset(user, attrs, opts)
   end
 
+  # This one update the user's username and save it to the database
   def update_user_username(user, attrs) do
     user
     |> User.username_changeset(attrs)
