@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title default="Proplex" suffix=" · Phoenix Framework" phx-no-format>{assigns[:page_title]}</.live_title>
+    <.live_title default="Proplex - Property Management" suffix=" · Proplex" phx-no-format>{assigns[:page_title]}</.live_title>
     <link phx-track-static rel="stylesheet" href={~p"/assets/css/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/js/app.js"}>
     </script>
@@ -23,13 +23,13 @@
           setTheme(localStorage.getItem("phx:theme") || "system");
         }
         window.addEventListener("storage", (e) => e.key === "phx:theme" && setTheme(e.newValue || "system"));
-        
+
         window.addEventListener("phx:set-theme", (e) => setTheme(e.target.dataset.phxTheme));
       })();
     </script>
   </head>
   <body>
-    <ul class="menu menu-horizontal w-full relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
+    <%!-- <ul class="menu menu-horizontal w-full relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
       <%= if @current_scope do %>
         <li>
           {@current_scope.user.email}
@@ -48,7 +48,18 @@
           <.link href={~p"/users/log-in"}>Log in</.link>
         </li>
       <% end %>
-    </ul>
+    </ul> --%>
+    <header class="border-b border-base-300 bg-base-100">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div class="flex h-16 items-center justify-between">
+          <.link navigate={~p"/"} class="flex items-center gap-2 hover:opacity-80">
+            <.icon name="hero-building-office-2" class="size-7 text-primary">
+            <span class="text-lg font-semibold tracking-tight text-base-content">Proplex</span>
+          </.link>
+          <nav class="flex items-center gap-2"></nav>
+        </div>
+      </div>
+    </header>
     {@inner_content}
   </body>
 </html>

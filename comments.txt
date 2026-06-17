@@ -212,3 +212,120 @@ defp maybe_validate_30_days(changeset, opts) do
   end
 end
 
+Now we're going to tell the user to check email after registration. So we need to create the route and view
+for check email. To do that first let's create the route in router.ex located inside "lib/proplex/router.ex":
+now go to the live sessions for live view and after the user registration route put the new route in a new line
+like this:
+live "/users/echeck-email", UserLive.CheckEmail, :show
+
+why the show atom is used in the above route? Is it convention?
+
+Yes, it is absolutely a convention, and a very powerful one in Phoenix.
+
+That atom—:show—is known as the Live Action. Think of it as a routing flag that tells the LiveView exactly which mode or intent it is being loaded with.
+
+Here is why it is used in router.ex and how it helps you write cleaner code:
+
+1. The Use Case: Sharing One Component for Multiple Actions
+Instead of creating three different LiveView files for viewing, editing, and creating a user, 
+you can point them all to the same LiveView file and use the atom to tell them apart:
+
+# router.ex
+live "/users/:id", UserLive.Profile, :show
+live "/users/:id/edit", UserLive.Profile, :edit
+
+Both of these routes point to UserLive.Profile. When the user visits /users/123/edit, the LiveView knows they want to edit, 
+not just look, because the router injects :edit into the view's state.
+
+2. How it lands in your LiveView (socket.assigns.live_action)
+When a user hits that route, Phoenix automatically takes that atom and attaches it to the socket as @live_action.
+
+You can then use it in your code to change the UI or run specific code.
+
+In your Mount / Handle_Params (Logical switching):
+def handle_params(_params, _url, socket) do
+  # socket.assigns.live_action will be :show
+  {:noreply, apply_action(socket, socket.assigns.live_action)}
+end
+
+defp apply_action(socket, :show), do: assign(socket, page_title: "Checking Email")
+defp apply_action(socket, :edit), do: assign(socket, page_title: "Editing Profile")
+
+In your HTML Template (UI switching):
+<div>
+  <%= if @live_action == :show do %>
+    <h2>Please check your inbox!</h2>
+  <% end %>
+
+  <%= if @live_action == :edit do %>
+    <h2>Update your email address below:</h2>
+  <% end %>
+</div>
+
+Common Conventional Atoms for route:
+While you can technically name that atom anything you want (like :banana or :check_email), the community follows the classic REST/Phoenix conventions:
+
+:index - Listing multiple items.
+
+:show - Displaying a single specific item or detail page.
+
+:new - Displaying a form to create something fresh.
+
+:edit - Displaying a form to modify something existing.
+
+Even if you only have one route pointing to UserLive.CheckEmail right now, 
+including :show is best practice because it sets you up cleanly if you ever need to add an :edit or :success state to that same page down the road.
+
+Now let's change the view for the above mentioned route which is:
+live "/users/echeck-email", UserLive.CheckEmail, :show
+
+To change the view for this route we need to change the root.html.heex file located in "lib/proplex_web/components/layout/root.html.heex"
+root.html.heex:
+within the body tag remove ul elements. Here we're disabling the existing ul element.
+And adding a <header> tag here.
+    <header class="border-b border-base-300 bg-base-100">
+      <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div class="flex h-16 items-center justify-between">
+          <.link navigate={~p"/"} class="flex items-center gap-2 hover:opacity-80">
+            <.icon name="hero-building-office-2" class="size-7 text-primary">
+            <span class="text-lg font-semibold tracking-tight text-base-content">Proplex</span>
+          </.link>
+          <nav class="flex items-center gap-2"></nav>
+        </div>
+      </div>
+    </header>
+
+border-b: Adds a border to the bottom of the element.
+
+border-base-300: Sets the color of that bottom border (often used in DaisyUI/component frameworks for a light gray/neutral border line).
+
+bg-base-100: Sets the background color (typically the default theme background color, usually white or off-white).
+
+mx-auto: Sets horizontal margins to auto, centering the entire container horizontally on the screen.
+
+max-w-6xl: Restricts the maximum width of the container to 72rem (1152px) so the layout doesn't stretch too wide on huge monitors.
+
+px-4: Adds baseline horizontal padding on the x-axis (left and right) of 1rem (16px) for mobile devices.
+
+sm:px-6: Responsive breakpoint. On small screens (640px and up), it bumps the left/right padding to 1.5rem (24px). [for small devices]
+
+lg:px-8: Responsive breakpoint. On large screens (1024px and up), it increases the left/right padding to 2rem (32px). [for large devices]
+
+flex: Applies Flexbox layout behavior to its child elements.
+
+h-16: Sets a fixed height of 4rem (64px).
+
+items-center: Vertically centers all the items inside this flex container.
+
+justify-between: Pushes items to opposite edges. For example, if you have a logo and a "Sign In" button inside, the logo will push to the far left and the button to the far right.
+
+Now within the innermost div we're going to use the built-in link function component which is defined in our core components.
+<.link navigate={~p"/"}>  -- remember we're using . because it's a function
+This navigate is a LiveView client side navigation, which is going to tell Phoenix LiveView that instead of doing a full page reload,
+use efficiently the WebSocket connection and update just part of the page that have changed.
+p sigil is going to take the route and going to check if the route(here it's "/") actually exists in our router during compile time.
+If we remove the route or have a typo then we'll get a compile time warning rather than a broken link at run time.
+
+~p is called "p sigil"
+
+.icon is also a function component. All these components are inside "lib/proplex_web/components/core_components.ex" file.
