@@ -75,3 +75,140 @@ in this @inner_block within this render slot like that.
   change set that we're going to write is `registration_changeset(user, attrs)`
 
 
+3. Context accounts.ex file in lib/proplex/accounts/accounts.ex:
+This module is called context and within context module we're going to encpasulate
+all data access and data validation.
+Everything outside this module be it controllers, live views etc. are forbidden from calling our repo directly on users
+or touching the users changesets, thay all have to go through the functions in this module.
+
+First thing since we added some changesets regarding registration and username change, we need to make some changes to this context file.
+    - Using "is_binary()" guard to make sure the username is string. Example:
+
+      def get_user_by_username(username) when is_binary(username) do
+        Repo.get_by(User, username: username)
+      end
+
+      get_by() is an Ecto function.
+
+
+Now We're going to build a changeset for the user registration and validation purposes:
+  def change_user_registration(%User{} = user, attrs \\ %{}) do
+    # Now we're calling the changeset that we created in user.ex
+    # And since we're only validating a form, we're going to skip expensive
+    # password hashing by not running bcrypt.
+    User.registration_changeset(user, attrs,
+      hash_password: false,
+      validate_unique: false,
+      validate_unique_name: false
+    )
+  end
+Here, we're pattern matching input(user) with User struct(%User{}) and also providing an empty struct(%{}) as default value for attributes(attrs)
+if there is no value provided for attrs argument.
+So in the above function we have disabled some options because we want the client side to do a quick check for the styles 
+without having to hit the database on every keystroke.
+
+Now we're going to create the actual function that creates and saves a new user using the changeset. So we're going to modify an already existing function here.
+So we're modifying th following function:
+  def register_user(attrs) do
+    %User{}
+    |> User.email_changeset(attrs)
+    |> Repo.insert()
+  end
+
+To 
+
+  def register_user(attrs) do
+    %User{}
+    |> User.registration_changeset(attrs)
+    |> Repo.insert()
+  end
+
+
+Note: ***
+The Elixir Pipe Operator (|>)
+The pipe operator takes the result of the expression on its left and injects it as the first argument of the function call on its right.
+
+So, when you write:
+%User{}
+|> User.registration_changeset(attrs)
+
+Elixir translates that into:
+User.registration_changeset(%User{}, attrs)
+
+The Full Picture
+If we rewrite your entire function without the pipe operator, it looks like this:
+def register_user(attrs) do
+  # 1. Pass struct and attrs to get a changeset
+  changeset = User.registration_changeset(%User{}, attrs)
+  
+  # 2. Pass that changeset into Repo.insert()
+  Repo.insert(changeset)
+end
+
+
+def change_user_username(%User{} = user, attrs \\ %{}, opts \\ []) do --- what is the use of "%User{} = user" argument ?
+
+%User{} = user --> Here we're pattern matching to make sure the structure of the user input should be a struct.
+By using %User{}, you are telling Elixir: "This function must only accept a struct of type User." 
+If a developer accidentally tries to pass in a plain map (%{name: "John"}), a string, nil, or a struct from a different context (like %Post{}), 
+the pattern match will fail immediately and throw a FunctionClauseError.
+
+The "= user" part binds the entire incoming struct to the variable user so you can actually use it inside the function body.
+So %User{} = user is not setting the default value as user. right?
+So whatever user data I'm passing to the function, it gets checked  with pattern matching like 
+%User{} = %User{....} then if it's successful then %User{....} user input is assigned to the variable user so that we can use
+variable user in the function body and this user variable holds user's input.
+
+
+
+def change_user_username(user, attrs \\ %{}, opts \\ []) do ---
+why are we using attrs and opts here?
+
+Here is the breakdown of why mixing them together breaks down in practice:
+
+1. attrs is for External User Data (Untrusted)
+attrs comes directly from the outside world (the user's browser, an API request, a form submission).
+
+  - The Destination: It is passed into Ecto's cast/3 function.
+
+  - The Behavior: cast/3 expects a map of parameters, filters out keys that aren't explicitly allowed, 
+  and converts string keys (like "username" => "alice") into atom keys.
+
+  - Why opts can't go here: If you put internal configuration options like [skip_email_validation: true] inside attrs, 
+  Ecto's cast/3 will completely ignore and drop them because skip_email_validation isn't a column in your database table.
+
+2. opts is for Internal System Instructions (Trusted)
+opts is code written by you (the developer) to change how the context or validation behaves in a specific scenario. 
+It never comes from a user form.
+
+  - The Destination: It bypasses cast/3 and goes directly to your custom validation logic or Ecto repository options.
+
+  - The Behavior: It is a Keyword List (e.g., [action: :insert, timeout: 5000]), which is Elixir's standard way of passing optional configuration flags.
+
+A Clear Scenario: Updating vs. Onboarding
+Imagine you have a rule: A user's username can only be changed once every 30 days. 
+However, when an Admin modifies a user's account, or when you are running a test suite, you want to bypass that 30-day rule. 
+By separating attrs and opts, you can do this cleanly:
+
+# 1. Normal User submits a web form
+Accounts.change_user_username(user, %{"username" => "new_name"})
+
+# 2. An Admin bypasses the restriction
+Accounts.change_user_username(user, %{"username" => "new_name"}, [force: true])
+
+Inside your User schema, you read the opts to make a decision:
+def username_changeset(user, attrs, opts \\ []) do
+  user
+  |> cast(attrs, [:username])
+  |> validate_required([:username])
+  |> maybe_validate_30_days(opts) # <-- We check if `force: true` is in opts
+end
+
+defp maybe_validate_30_days(changeset, opts) do
+  if opts[:force] == true do
+    changeset # Skip validation
+  else
+    validate_username_frequency(changeset) # Run validation
+  end
+end
+

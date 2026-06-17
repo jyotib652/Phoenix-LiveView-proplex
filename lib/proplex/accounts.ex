@@ -26,6 +26,11 @@ defmodule Proplex.Accounts do
     Repo.get_by(User, email: email)
   end
 
+  # lookup of user by username
+  def get_user_by_username(username) when is_binary(username) do
+    Repo.get_by(User, username: username)
+  end
+
   @doc """
   Gets a user by email and password.
 
@@ -62,6 +67,17 @@ defmodule Proplex.Accounts do
 
   ## User registration
 
+  def change_user_registration(%User{} = user, attrs \\ %{}) do
+    # Now we're calling the changeset that we created in user.ex
+    # And since we're only validating a form, we're going to skip expensive
+    # password hashing by not running bcrypt.
+    User.registration_changeset(user, attrs,
+      hash_password: false,
+      validate_unique: false,
+      validate_unique_name: false
+    )
+  end
+
   @doc """
   Registers a user.
 
@@ -74,9 +90,16 @@ defmodule Proplex.Accounts do
       {:error, %Ecto.Changeset{}}
 
   """
+
+  # def register_user(attrs) do
+  #   %User{}
+  #   |> User.email_changeset(attrs)
+  #   |> Repo.insert()
+  # end
+
   def register_user(attrs) do
     %User{}
-    |> User.email_changeset(attrs)
+    |> User.registration_changeset(attrs)
     |> Repo.insert()
   end
 
@@ -130,6 +153,16 @@ defmodule Proplex.Accounts do
         _ -> {:error, :transaction_aborted}
       end
     end)
+  end
+
+  def change_user_username(user, attrs \\ %{}, opts \\ []) do
+    User.username_changeset(user, attrs, opts)
+  end
+
+  def update_user_username(user, attrs) do
+    user
+    |> User.username_changeset(attrs)
+    |> Repo.update()
   end
 
   @doc """
