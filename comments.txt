@@ -283,14 +283,34 @@ To change the view for this route we need to change the root.html.heex file loca
 root.html.heex:
 within the body tag remove ul elements. Here we're disabling the existing ul element.
 And adding a <header> tag here.
-    <header class="border-b border-base-300 bg-base-100">
+<header class="border-b border-base-300 bg-base-100">
       <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between">
           <.link navigate={~p"/"} class="flex items-center gap-2 hover:opacity-80">
             <.icon name="hero-building-office-2" class="size-7 text-primary">
             <span class="text-lg font-semibold tracking-tight text-base-content">Proplex</span>
           </.link>
-          <nav class="flex items-center gap-2"></nav>
+          <nav class="flex items-center gap-2">
+            <%= if @current_scope do %>
+            <span class="hidden text-sm text-base-content/70 sm:inline">
+              {@current_scope.user.email}
+            </span>
+            <.link navigate={~p"/user/settings"} class="btn btn-ghost btn-sm">
+              Settings
+            </.link>
+            <.link href={~p"/user/log-out"} method="delete" class="btn btn-ghost btn-sm">
+              Log out
+            </.link>
+            <% else %>
+            <.link navigate={~p"/user/log-in"} class="btn btn-ghost btn-sm">
+              Log in
+            </.link>
+            <.link navigate={~p"/user/register"} class="btn btn-primary btn-sm">
+              Register
+            </.link>
+            <% end %>
+              <.theme_toggle />
+          </nav>
         </div>
       </div>
     </header>
@@ -329,3 +349,152 @@ If we remove the route or have a typo then we'll get a compile time warning rath
 ~p is called "p sigil"
 
 .icon is also a function component. All these components are inside "lib/proplex_web/components/core_components.ex" file.
+
+<%=>  --> This "=" sign means the result is going to be rendered into the HTML.
+<%= if @current_scope do %>  --> So the current_scope is an assigned variable that is going to represent the currently authenticated user session.
+it will either be a struct, meaning truthy when someone is logged in or nil when they are not.
+
+<.link href={~p"/user/log-out"} method="delete" class="btn btn-ghost btn-sm">  -->
+logging out is not a Live view action. It's a traditional server side request that needs to go through
+the regular HTTP pieline. And it's not any Live view action.
+Furthermore, whenever we're just logging out a user, we just need to clear the session and delete cookies and invalidate
+the user's token.
+
+<% else %>  --> if we don't have a logged in user what we're going to do? We're going to provide a link for the user to log in or register.
+
+<% end %>  --> close the if or if-else block.
+
+
+3. Now we need to provide the facility for a user to enter email and username as both of these are requirement for our database.
+So we need to do the changes in registration form which is registration.ex
+location: lib/proplex_web/live/user_live/registration.ex
+
+registration.ex:
+use ProplexWeb, :live_view  --> just by passing this :live_view atom we're making this fiorm/function a LiveView Function.
+
+@impl true --> This is going to tell the compiler that this function(render(assigns)) which is the render function implements a callback
+which is defined by the LiveView behaviour. This is not strictly required but for example if you have a typo in the function name or the
+arity then the compiler is going to warn you instead of silently creating a dead function.
+
+render(assigns) --> assigns is a prop. Assigns is a map of the key value pairs that are going to be stored in the socket. It's basically how
+LiveView passes data from the server to the template.
+
+<div class="mx-auto max-w-md"> --> max-w-md: max width medium
+
+<div class="text-center">  --> getting rid of the whole div.
+
+Now we're going to create a card by creating a wrapper:
+<div class="relative rounded-box border border-base-300 bg-base-200 px-6 pb-8 pt-12 sm:px-10 sm:pb-10">
+</div>
+
+The content of the card:
+        <div class="relative rounded-box border border-base-300 bg-base-200 px-6 pb-8 pt-12 sm:px-10 sm:pb-10">
+          <div class="absolute -top-7 left-1/2 inline-flex size-14 -translate-x-1/2 items-center justify-center rounded-full bg-primary/10 ring-4 ring-base-100">
+            <.icon name="hero-user-plus" class="size-9 text-primary" />
+          </div>
+          <div class="mb-6 text-center">
+            <h1 class="text-2xl font-semibold tracking-tight">
+              Register for an account
+            </h1>
+            <p class="mt-2 text-sm text-base-content/70">
+            Already registered?
+            <.link navigate={~p"/users/log-in"} class="font-semibold text-primary hover:underline">
+              Log in
+            </.link>
+            to your account now.
+            </p>
+        </div>
+
+<.link navigate={~p"/users/log-in"} class="font-semibold text-primary hover:underline">  --->
+If you're already registered then we're going to navigate to our Live View. So we can add the link component.
+
+Then now we're going to define our form. So we're going to maintain this registration form but we're going to add a debounce so that
+the form is going to wait for around 400 miliseconds after the last keystroke before firing the validate event so that we avoid hitting
+the server on every keystroke:
+<.form
+  for={@form}
+  id="registration_form"
+  phx-submit="save"
+  phx-change="validate"
+  phx-debounce="400"
+>
+  <.input
+    field={@form[:email]}
+    type="email"
+    label="Email"
+    autocomplete="email"
+    spellcheck="false"
+    required
+    phx-mounted={JS.focus()}
+  />
+
+  <.input
+    field={@form[:username]}
+    type="text"
+    label="Username"
+    autocomplete="username"
+    spellcheck="false"
+    required
+  />
+
+  <.password_input
+    field={@form[:password]}
+    label="Password"
+    autocomplete="new-password"
+    required
+    phx-debounce="blur"
+  />
+
+  <p class="-mt-1 mb-3 text-xs text-base-content/60">
+    At least 12 characters.
+  </p>
+
+  <.password_input
+    field={@form[:password_confirmation]}
+    label="Confirm Password"
+    autocomplete="new-password"
+    required
+    phx-debounce="blur"
+  />
+
+  <.button phx-disable-with="Creating account..." class="btn btn-primary mt-2 w-full">
+    Create an account
+  </.button>
+</.form>
+
+
+<.password_input>  --> we have a component called password input.
+
+def mount(_params, _session, %{assigns: %{current_scope: %{user: user}}} = socket)  -->
+This function is going to handle if we have already authenticated or logged in users. So they have nothing to do here, we're going to 
+just send them to the landing page.
+
+%{assigns: %{current_scope: %{user: user}}} = socket  --> here we're pattern matching with destructuring.
+First we're destructuring socket struct so that we can pattern match with left hand side of =
+Left hand side has nested map structure. If it matches with right hand side value then it assign values to user.
+
+  def mount(_params, _session, %{assigns: %{current_scope: %{user: user}}} = socket)
+      when not is_nil(user) do   ---> This means some user is logged in otherwise it would not run.
+    {:ok, redirect(socket, to: ProplexWeb.UserAuth.signed_in_path(socket))}  ---> here we're redirecting logged in user to the landing page.
+  end
+
+  This mount function will run or match when the first mount function is not matched or run.
+    def mount(_params, _session, socket) do
+    changeset = Accounts.change_user_email(%User{}, %{}, validate_unique: false)
+
+    {:ok, assign_form(socket, changeset), temporary_assigns: [form: nil]}
+  end
+
+  We're going to build an empty changeset to give the form its initial shape.
+  so we're changeing the existing function to:
+    def mount(_params, _session, socket) do
+    # changeset = Accounts.change_user_email(%User{}, %{}, validate_unique: false)
+    changeset = Accounts.change_user_registration(%User{})
+
+    {:ok, assign_form(socket, changeset), temporary_assigns: [form: nil]}
+  end
+
+  {:ok, assign_form(socket, changeset), temporary_assigns: [form: nil]} -->
+  So we're going to say OK then assign form the socket and changeset.Then temporary assigns form is nil. So temporary assigns nil is going to
+  tell the LiveView to clear the form atom from memory after each render since the form html is already in the browser. So keeping it
+  in the struct in server memory is just being wasteful.

@@ -53,10 +53,31 @@
       <div class="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between">
           <.link navigate={~p"/"} class="flex items-center gap-2 hover:opacity-80">
-            <.icon name="hero-building-office-2" class="size-7 text-primary">
+            <.icon name="hero-building-office-2" class="size-7 text-primary" />
             <span class="text-lg font-semibold tracking-tight text-base-content">Proplex</span>
           </.link>
-          <nav class="flex items-center gap-2"></nav>
+
+          <nav class="flex items-center gap-2">
+            <%= if @current_scope do %>
+              <span class="hidden text-sm text-base-content/70 sm:inline">
+                {@current_scope.user.email}
+              </span>
+              <.link navigate={~p"/user/settings"} class="btn btn-ghost btn-sm">
+                Settings
+              </.link>
+              <.link href={~p"/user/log-out"} method="delete" class="btn btn-ghost btn-sm">
+                Log out
+              </.link>
+            <% else %>
+              <.link navigate={~p"/user/log-in"} class="btn btn-ghost btn-sm">
+                Log in
+              </.link>
+              <.link navigate={~p"/user/register"} class="btn btn-primary btn-sm">
+                Register
+              </.link>
+            <% end %>
+              <.theme_toggle />
+          </nav>
         </div>
       </div>
     </header>
